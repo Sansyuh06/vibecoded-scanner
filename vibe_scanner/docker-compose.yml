@@ -1,0 +1,107 @@
+version: '3.9'
+
+services:
+  frontend:
+    build: ./frontend
+    container_name: vibe-scanner-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - web
+    environment:
+      - VITE_API_URL=http://localhost:8000/api/v1
+    networks:
+      - vibe-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  web:
+    build: .
+    container_name: vibe-scanner-api
+    ports:
+      - "8000:8000"
+    env_file: .env
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    command: >
+      bash -c "alembic upgrade head &&
+      uvicorn vibe_scanner.main:app --host 0.0.0.0 --port 8000"
+    networks:
+      - vibe-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  db:
+    image: postgres:15-alpine
+    container_name: vibe-scanner-db
+    environment:
+      - POSTGRES_USER=${DB_USER:-vibe}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-change_me_in_production}
+      - POSTGRES_DB=${DB_NAME:-vibedb}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - vibe-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-vibe}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: vibe-scanner-redis
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-change_me_in_production}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - vibe-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  worker:
+    build: .
+    container_name: vibe-scanner-worker
+    env_file: .env
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-change_me_in_production}@redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD:-change_me_in_production}@redis:6379/0
+    command: celery -A vibe_scanner.worker worker --loglevel=info --concurrency=4
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - vibe-network
+    restart: on-failure
+
+networks:
+  vibe-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:

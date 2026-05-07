@@ -1,0 +1,62 @@
+{
+  "metadata": {
+    "url": "https://rayavel.com",
+    "domain": "rayavel.com",
+    "status_code": 200,
+    "content_type": "text/html; charset=utf-8",
+    "server": "Vercel",
+    "scan_time": "2025-12-30T03:03:26.799584"
+  },
+  "vulnerabilities": [
+    {
+      "type": "Missing Security Header",
+      "severity": "MEDIUM",
+      "description": "Missing header: X-XSS-Protection"
+    },
+    {
+      "type": "Missing Security Header",
+      "severity": "MEDIUM",
+      "description": "Missing header: Content-Security-Policy"
+    },
+    {
+      "type": "Missing Rate Limiting",
+      "severity": "HIGH",
+      "description": "No rate limiting detected - 50 requests succeeded"
+    }
+  ],
+  "api_keys_found": [],
+  "security_headers": {
+    "Strict-Transport-Security": {
+      "present": true
+    },
+    "X-Content-Type-Options": {
+      "present": true
+    },
+    "X-Frame-Options": {
+      "present": true
+    },
+    "X-XSS-Protection": {
+      "present": false
+    },
+    "Content-Security-Policy": {
+      "present": false
+    },
+    "Referrer-Policy": {
+      "present": true
+    }
+  },
+  "authentication": {},
+  "cors": {
+    "allow_origin": null,
+    "tests": []
+  },
+  "rate_limiting": {
+    "requests_sent": 50,
+    "successful": 50,
+    "blocked": 0
+  },
+  "ssl_tls": {
+    "https_enabled": true,
+    "certificate_valid": true
+  }
+}
