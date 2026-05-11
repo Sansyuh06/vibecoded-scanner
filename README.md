@@ -298,17 +298,7 @@ All errors are logged with full context and returned with unique request IDs for
 - [x] Error handling without info disclosure
 - [x] Database connection security
 
-## 📞 Support
 
-For issues, feature requests, or security concerns:
-1. Check existing documentation
-2. Review logs for error details
-3. Check API request IDs for tracing
-4. Report security issues privately
-
-## 📄 License
-
-[Your License Here]
 
 ## 🙏 Acknowledgments
 
