@@ -67,6 +67,7 @@ class ScanResponse(BaseModel):
     id: str
     status: str
     target_url: str
+    created_at: Optional[str] = None
     started_at: Optional[str] = None
     completed_at: Optional[str] = None
     critical_count: int
@@ -124,7 +125,7 @@ async def run_scan_background(scan_id: str) -> None:
                 )
                 scan = result.scalar_one_or_none()
                 if scan:
-                    scan.status = ScanStatus.FAILED
+                    scan.status = ScanStatus.FAILED.value
                     await session.commit()
         except Exception as update_error:
             logger.error(f"Failed to update scan status to FAILED: {update_error}")
@@ -147,7 +148,7 @@ async def create_scan(
         # Create scan record
         new_scan = Scan(
             target_url=scan_url,
-            status=ScanStatus.PENDING
+            status=ScanStatus.PENDING.value
         )
         db.add(new_scan)
         await db.commit()
@@ -208,6 +209,7 @@ async def get_scans(
                 "id": str(scan.id),
                 "target_url": scan.target_url,
                 "status": scan.status,
+                "created_at": scan.created_at.isoformat() if scan.created_at else None,
                 "started_at": scan.started_at.isoformat() if scan.started_at else None,
                 "completed_at": scan.completed_at.isoformat() if scan.completed_at else None,
                 "critical_count": scan.critical_count,
@@ -266,7 +268,7 @@ async def get_scan_status(
             "id": str(scan.id),
             "target_url": scan.target_url,
             "status": scan.status,
-            "created_at": scan.started_at.isoformat() if scan.started_at else None,
+            "created_at": scan.created_at.isoformat() if scan.created_at else None,
             "completed_at": scan.completed_at.isoformat() if scan.completed_at else None,
             "findings_count": len(scan.findings),
             "findings": [
@@ -324,7 +326,7 @@ async def get_pdf_report(
                 detail="Scan not found"
             )
         
-        if scan.status != ScanStatus.COMPLETED:
+        if scan.status != ScanStatus.COMPLETED.value:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Scan must be completed before generating report. Current status: {scan.status}"

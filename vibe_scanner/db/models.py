@@ -31,7 +31,7 @@ class User(Base):
     hashed_password = Column(String(255), nullable=False)
     full_name = Column(String(255), nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
-    role = Column(String(50), default=UserRole.USER, nullable=False)
+    role = Column(String(50), default=UserRole.USER.value, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
@@ -65,7 +65,7 @@ class Scan(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     project_id = Column(UUID(as_uuid=True), ForeignKey("projects.id", ondelete="CASCADE"), nullable=True)
-    status = Column(String(50), default=ScanStatus.PENDING, nullable=False, index=True)
+    status = Column(String(50), default=ScanStatus.PENDING.value, nullable=False, index=True)
     target_url = Column(String(2048), nullable=False)
     started_at = Column(DateTime, nullable=True)
     completed_at = Column(DateTime, nullable=True)

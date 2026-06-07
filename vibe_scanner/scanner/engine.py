@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import uuid
 from typing import List, Type, Optional
 from datetime import datetime
 
@@ -65,7 +66,7 @@ class ScanEngine:
             logger.info(f"Starting scan {self.scan_id} for {scan.target_url}")
             
             # 2. Update status to RUNNING
-            scan.status = ScanStatus.RUNNING
+            scan.status = ScanStatus.RUNNING.value
             scan.started_at = datetime.utcnow()
             await self.db.commit()
             
@@ -74,13 +75,13 @@ class ScanEngine:
                 pages = await self._crawl_target(scan.target_url)
             except CrawlError as e:
                 logger.error(f"Crawling failed: {e}")
-                scan.status = ScanStatus.FAILED
+                scan.status = ScanStatus.FAILED.value
                 await self.db.commit()
                 return
             
             if not pages:
                 logger.warning(f"No pages crawled for {scan.target_url}")
-                scan.status = ScanStatus.COMPLETED
+                scan.status = ScanStatus.COMPLETED.value
                 scan.completed_at = datetime.utcnow()
                 await self.db.commit()
                 return
@@ -96,7 +97,7 @@ class ScanEngine:
             
             # 6. Update scan completion status
             metrics = self._calculate_metrics(findings)
-            scan.status = ScanStatus.COMPLETED
+            scan.status = ScanStatus.COMPLETED.value
             scan.completed_at = datetime.utcnow()
             scan.critical_count = metrics["CRITICAL"]
             scan.high_count = metrics["HIGH"]
@@ -118,8 +119,9 @@ class ScanEngine:
     async def _fetch_scan(self) -> Scan:
         """Fetch and validate the scan record."""
         try:
+            scan_uuid = uuid.UUID(self.scan_id)
             result = await self.db.execute(
-                select(Scan).where(Scan.id == self.scan_id)
+                select(Scan).where(Scan.id == scan_uuid)
             )
             scan = result.scalar_one_or_none()
             
@@ -228,13 +230,14 @@ class ScanEngine:
     async def _mark_scan_failed(self) -> None:
         """Mark the scan as failed."""
         try:
+            scan_uuid = uuid.UUID(self.scan_id)
             result = await self.db.execute(
-                select(Scan).where(Scan.id == self.scan_id)
+                select(Scan).where(Scan.id == scan_uuid)
             )
             scan = result.scalar_one_or_none()
             
             if scan:
-                scan.status = ScanStatus.FAILED
+                scan.status = ScanStatus.FAILED.value
                 scan.completed_at = datetime.utcnow()
                 await self.db.commit()
                 logger.info(f"Marked scan {self.scan_id} as failed")

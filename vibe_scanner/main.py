@@ -10,7 +10,7 @@ from fastapi.exceptions import RequestValidationError
 from sqlalchemy.exc import SQLAlchemyError
 
 from .config import settings
-from .db.database import engine, Base
+from .db.database import engine, Base, init_db
 from .api import routes
 
 # Configure logging
@@ -26,8 +26,7 @@ async def lifespan(app: FastAPI):
     """Async context manager for startup and shutdown events."""
     # Startup
     logger.info(f"Starting Vibe Scanner API (Environment: {settings.ENVIRONMENT})")
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    await init_db()
     logger.info("Database tables created/verified")
     yield
     
